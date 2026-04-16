@@ -59,9 +59,16 @@ async function loadStars() {
   const res = await fetch(url);
   const data = await res.json();
   allObjects = data.objects;
+
+  // ★ 更新時間を表示
+  const t = new Date(data.timestamp);
+  document.getElementById("updateTime").innerText =
+    `更新時間: ${t.toLocaleString("ja-JP")}`;
+
   renderMoon();
   renderList();
 }
+
 
 function renderMoon() {
   const moon = allObjects.find(o => o.name === "moon");
