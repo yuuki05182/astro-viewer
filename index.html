@@ -57,7 +57,7 @@ const planetInfo = {
 let allObjects = [];
 
 async function loadStars() {
-  const url = "https://astro-proxy.y-imamine43.workers.dev/astro";
+  const url = "https://astro-proxy.y-imamine43.workers.dev/astro?me=1";
   const res = await fetch(url);
   const data = await res.json();
   allObjects = data.objects;
