@@ -63,7 +63,7 @@ async function loadStars() {
 }
 
 function renderMoon() {
-  const moon = allObjects.find(o => o.name === "Moon");
+  const moon = allObjects.find(o => o.name === "moon");
   const box = document.getElementById("moonBox");
 
   if (!moon || moon.alt < 0) {
