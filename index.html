@@ -21,6 +21,8 @@
 <h1>今見える星の一覧</h1>
 <h2 id="updateTime"></h2>
 
+<div id="accessCount" style="margin-top:10px; font-size:18px; font-weight:bold;"></div>
+
 <div class="controls">
   <select id="typeFilter">
     <option value="all">惑星 + 恒星</option>
@@ -59,6 +61,12 @@ async function loadStars() {
   const res = await fetch(url);
   const data = await res.json();
   allObjects = data.objects;
+
+  // ★ あなた（?me=1）のときだけ累計アクセス数を表示
+if (data.totalAccess !== undefined) {
+  document.getElementById("accessCount").innerText =
+    `累計アクセス数: ${data.totalAccess}`;
+}
 
   // ★ 更新時間を表示
   const t = new Date(data.timestamp);
