@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>今見える星の一覧</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #f5f5f5; }
+    h1 { text-align: center; }
+    .controls { margin-bottom: 20px; text-align: center; }
+    select { padding: 8px; font-size: 16px; margin: 0 5px; }
+    .star-item {
+      background: white; padding: 15px; margin-bottom: 12px;
+      border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .name { font-size: 20px; font-weight: bold; }
+    .type { color: #666; font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<h1>今見える星の一覧</h1>
+
+<div class="controls">
+  <select id="typeFilter">
+    <option value="all">惑星 + 恒星</option>
+    <option value="Planet">惑星のみ</option>
+    <option value="Star">恒星のみ</option>
+  </select>
+</div>
+
+<h2>🌙 今の月</h2>
+<div id="moonBox"></div>
+
+<h2>🌟 星の一覧</h2>
+<div id="list"></div>
+
+<script>
+// 日本語名
+const starInfo = {
+  sirius: "シリウス", betelgeuse: "ベテルギウス", rigel: "リゲル",
+  procyon: "プロキオン", capella: "カペラ", aldebaran: "アルデバラン",
+  vega: "ベガ", altair: "アルタイル", deneb: "デネブ",
+  arcturus: "アークトゥルス", spica: "スピカ",
+  regulus: "レグルス", fomalhaut: "フォーマルハウト"
+};
+
+const planetInfo = {
+  Sun: "太陽", Moon: "月", Mercury: "水星", Venus: "金星",
+  Mars: "火星", Jupiter: "木星", Saturn: "土星",
+  Uranus: "天王星", Neptune: "海王星", Pluto: "冥王星",
+  Polaris: "北極星"
+};
+
+let allObjects = [];
+
+async function loadStars() {
+  const url = "https://astro-proxy.y-imamine43.workers.dev/astro";
+  const res = await fetch(url);
+  const data = await res.json();
+  allObjects = data.objects;
+  renderMoon();
+  renderList();
+}
+
+function renderMoon() {
+  const moon = allObjects.find(o => o.name === "Moon");
+  const box = document.getElementById("moonBox");
+
+  if (!moon || moon.alt < 0) {
+    box.innerHTML = "月は地平線の下にあります";
+    return;
+  }
+
+  box.innerHTML = `
+    <div class="star-item">
+      <div class="name">🌙 月</div>
+      <div>高度: ${moon.alt.toFixed(1)}°</div>
+      <div>方位角: ${moon.az.toFixed(1)}°（${moon.direction}）</div>
+    </div>
+  `;
+}
+
+function renderList() {
+  const typeFilter = document.getElementById("typeFilter").value;
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+
+let planets = allObjects.filter(o => o.type === "Planet").sort((a,b)=>b.alt-a.alt);
+let stars   = allObjects.filter(o => o.type === "Star").sort((a,b)=>b.alt-a.alt);
+let sun     = allObjects.filter(o => o.type === "Sun");
+let moon    = allObjects.filter(o => o.type === "Moon");
+
+let ordered = [...sun, ...moon, ...planets, ...stars];
+
+ordered.forEach(obj => {
+    if (typeFilter !== "all" && obj.type !== typeFilter) return;
+  
+    let jpName = obj.jpName || obj.name;
+
+    const div = document.createElement("div");
+    div.className = "star-item";
+
+    div.innerHTML = `
+      <div class="name">★ ${jpName}</div>
+      <div class="type">${obj.type === "Star" ? "恒星" : "惑星"}</div>
+      <div>高度: ${obj.alt.toFixed(1)}°</div>
+      <div>方位角: ${obj.az.toFixed(1)}°（${obj.direction}）</div>
+    `;
+
+    list.appendChild(div);
+  });
+}
+
+document.getElementById("typeFilter").addEventListener("change", renderList);
+
+loadStars();
+</script>
+
+</body>
+</html>
