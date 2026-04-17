@@ -126,11 +126,31 @@ ordered.forEach(obj => {
     div.className = "star-item";
 
     div.innerHTML = `
-      <div class="name">★ ${jpName}</div>
-      <div class="type">${obj.type === "Star" ? "恒星" : "惑星"}</div>
-      <div>高度: ${obj.alt.toFixed(1)}°</div>
-      <div>方位角: ${obj.az.toFixed(1)}°（${obj.direction}）</div>
-    `;
+  <div class="name">★ ${jpName}</div>
+  <div class="type">${obj.type === "Star" ? "恒星" : "惑星"}</div>
+
+  <div>高度: ${obj.alt.toFixed(1)}°</div>
+  <div>方位角: ${obj.az.toFixed(1)}°（${obj.direction}）</div>
+
+  <div>等級: ${
+    obj.magnitude !== undefined
+      ? obj.magnitude.toFixed(2)
+      : "-"
+  }</div>
+
+  <div>出: ${
+    obj.rise
+      ? new Date(obj.rise).toLocaleTimeString("ja-JP")
+      : "-"
+  }</div>
+
+  <div>入: ${
+    obj.set
+      ? new Date(obj.set).toLocaleTimeString("ja-JP")
+      : "-"
+  }</div>
+`;
+
 
     list.appendChild(div);
   });
