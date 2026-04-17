@@ -82,24 +82,28 @@ function renderMoon() {
   const moon = allObjects.find(o => o.name === "moon");
   const box = document.getElementById("moonBox");
 
-  if (!moon || moon.alt < 0) {
+  if (!moon) {
+    box.innerHTML = "月のデータがありません";
+    return;
+  }
+
+  if (moon.alt < 0) {
     box.innerHTML = "月は地平線の下にあります";
     return;
   }
 
   box.innerHTML = `
-    div.innerHTML = `
-  <div class="name">★ ${jpName}</div>
-  <div class="type">${obj.type === "Star" ? "恒星" : "惑星"}</div>
-  <div>高度: ${obj.alt.toFixed(1)}°</div>
-  <div>方位角: ${obj.az.toFixed(1)}°（${obj.direction}）</div>
-
-  <div>等級: ${obj.magnitude !== undefined ? obj.magnitude.toFixed(2) : "-"}</div>
-
-  <div>出: ${obj.rise ? new Date(obj.rise).toLocaleTimeString("ja-JP") : "-"}</div>
-  <div>入: ${obj.set  ? new Date(obj.set ).toLocaleTimeString("ja-JP") : "-"}</div>
-`;
+    <div class="star-item">
+      <div class="name">🌙 月</div>
+      <div>高度: ${moon.alt.toFixed(1)}°</div>
+      <div>方位角: ${moon.az.toFixed(1)}°（${moon.direction}）</div>
+      <div>等級: ${moon.magnitude}</div>
+      <div>出: ${moon.rise ? new Date(moon.rise).toLocaleTimeString("ja-JP") : "-"}</div>
+      <div>入: ${moon.set  ? new Date(moon.set ).toLocaleTimeString("ja-JP") : "-"}</div>
+    </div>
+  `;
 }
+
 
 function renderList() {
   const typeFilter = document.getElementById("typeFilter").value;
