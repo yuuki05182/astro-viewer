@@ -77,22 +77,21 @@ async function loadStars() {
 }
 
 function renderMoon() {
-  const moon = allObjects.find(o => o.name === "moon");
+  // 名前を小文字で検索し、さらに見つからない場合は type が "Moon" のものを探すように強化
+  const moon = allObjects.find(o => o.name.toLowerCase() === "moon" || o.type === "Moon");
   const box = document.getElementById("moonBox");
 
   if (!moon) {
-    box.innerHTML = "月のデータがありません";
+    box.innerHTML = "月のデータを読み込み中、または取得に失敗しました";
     return;
   }
 
-  if (moon.alt < 0) {
-    box.innerHTML = "月は地平線の下にあります";
-    return;
-  }
+  // 高度がマイナスでも、出没時間は知りたいはずなので表示するように変更
+  const isVisible = moon.alt >= 0 ? "（地平線上）" : "（地平線下）";
 
   box.innerHTML = `
-    <div class="star-item">
-      <div class="name">🌙 月</div>
+    <div class="star-item" style="border-left: 5px solid #ffcc00;">
+      <div class="name">🌙 月 ${isVisible}</div>
       <div>高度: ${moon.alt.toFixed(1)}°</div>
       <div>方位角: ${moon.az.toFixed(1)}°（${moon.direction}）</div>
       <div>等級: ${moon.magnitude}</div>
