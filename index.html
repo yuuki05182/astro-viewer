@@ -4,51 +4,51 @@
   <meta charset="UTF-8">
   <title>今見える星の一覧</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; background: #f5f5f5; }
-    h1 { text-align: center; }
+    body { font-family: sans-serif; padding: 20px; background: #f5f5f5; color: #333; }
+    h1 { text-align: center; margin-bottom: 5px; }
+    #updateTime { text-align: center; font-size: 0.9em; color: #666; margin-bottom: 20px; }
     .controls { margin-bottom: 20px; text-align: center; }
-    select { padding: 8px; font-size: 16px; margin: 0 5px; }
+    select { padding: 8px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; }
+    
+    /* 自分（?me=1）の時だけ出るカウンターのデザイン */
+    #accessCount { 
+      text-align: center; margin: 10px auto; padding: 10px; 
+      background: #e0f7fa; color: #006064; border-radius: 8px; 
+      max-width: 300px; display: none; /* 初期は非表示 */
+    }
+
     .star-item {
       background: white; padding: 15px; margin-bottom: 12px;
       border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      border-left: 5px solid #ddd;
     }
-    .name { font-size: 20px; font-weight: bold; }
-    .type { color: #666; font-size: 14px; }
+    .name { font-size: 20px; font-weight: bold; margin-bottom: 5px; }
+    .type { color: #666; font-size: 14px; margin-bottom: 10px; }
+    .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 15px; }
+    .label { color: #888; font-size: 0.9em; }
   </style>
 </head>
 <body>
 
 <h1>今見える星の一覧</h1>
-<h2 id="updateTime"></h2>
-
-<div id="accessCount" style="margin-top:10px; font-size:18px; font-weight:bold;"></div>
+<div id="updateTime"></div>
+<div id="accessCount"></div>
 
 <div class="controls">
   <select id="typeFilter">
-    <option value="all">惑星 + 恒星</option>
+    <option value="all">すべての天体</option>
     <option value="Planet">惑星のみ</option>
     <option value="Star">恒星のみ</option>
   </select>
 </div>
 
-<h2>🌙 今の月</h2>
 <div id="moonBox"></div>
-
-<h2>🌟 星の一覧</h2>
 <div id="list"></div>
 
 <script>
-// 日本語名
-const starInfo = {
-  sirius: "シリウス", betelgeuse: "ベテルギウス", rigel: "リゲル",
-  procyon: "プロキオン", capella: "カペラ", aldebaran: "アルデバラン",
-  vega: "ベガ", altair: "アルタイル", deneb: "デネブ",
-  arcturus: "アークトゥルス", spica: "スピカ",
-  regulus: "レグルス", fomalhaut: "フォーマルハウト"
-};
-
 let allObjects = [];
 
+// 時刻表示の安全な処理
 function formatTime(isoString) {
   if (!isoString) return "沈まない";
   const d = new Date(isoString);
@@ -57,54 +57,52 @@ function formatTime(isoString) {
 }
 
 async function loadStars() {
+  // location.search を引き継ぐことで ?me=1 をWorkerに送る
   const url = "https://astro-proxy.y-imamine43.workers.dev/astro" + location.search;
-  const res = await fetch(url);
-  const data = await res.json();
   
-  // Workerから届くデータを代入
-  allObjects = data.objects;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    allObjects = data.objects;
 
-  if (data.totalAccess !== undefined) {
-    document.getElementById("accessCount").innerText = `累計アクセス数: ${data.totalAccess}`;
+    // --- 管理者用カウンタの表示 ---
+    if (data.totalAccess !== undefined) {
+      const countBox = document.getElementById("accessCount");
+      countBox.innerText = `累計アクセス数: ${data.totalAccess}`;
+      countBox.style.display = "block";
+    }
+
+    // --- 更新時間 ---
+    const t = new Date(data.timestamp);
+    document.getElementById("updateTime").innerText = `更新: ${t.toLocaleString("ja-JP")}`;
+
+    renderMoon();
+    renderList();
+  } catch (e) {
+    document.getElementById("list").innerHTML = "<p>データの取得に失敗しました</p>";
   }
-
-  const t = new Date(data.timestamp);
-  document.getElementById("updateTime").innerText = `更新時間: ${t.toLocaleString("ja-JP")}`;
-
-  renderMoon();
-  renderList();
 }
 
 function renderMoon() {
-  // すべての天体名を確認用に出力（デバッグ用）
-  const allNames = allObjects.map(o => o.name).join(", ");
-  
-  // 検索条件を極限まで広げる（nameかjpNameに「月」か「moon」が入っていればOK）
-  const moon = allObjects.find(o => 
-    (o.name && o.name.toLowerCase().includes("moon")) || 
-    (o.jpName && o.jpName.includes("月")) ||
-    (o.type && o.type.toLowerCase() === "moon")
-  );
-  
+  const moon = allObjects.find(o => o.name === "moon" || o.type === "Moon");
   const box = document.getElementById("moonBox");
+  if (!moon) return;
 
-  if (!moon) {
-    box.innerHTML = `
-      <div class="star-item" style="color: red;">
-        月のデータが見つかりません。<br>
-        <small>届いている天体リスト: ${allNames}</small>
-      </div>`;
-    return;
-  }
+  const isVisible = moon.alt >= 0 ? "（地平線上）" : "（地平線下）";
 
   box.innerHTML = `
-    <div class="star-item" style="border-left: 5px solid #ffcc00;">
-      <div class="name">🌙 ${moon.jpName || "月"}</div>
-      <div>高度: ${moon.alt.toFixed(1)}°</div>
-      <div>方位角: ${moon.az.toFixed(1)}°（${moon.direction}）</div>
-      <div>出: ${formatTime(moon.rise)}</div>
-      <div>入: ${formatTime(moon.set)}</div>
+    <h2>🌙 今の月</h2>
+    <div class="star-item" style="border-left-color: #ffcc00; background: #fffde7;">
+      <div class="name">月 ${isVisible}</div>
+      <div class="data-grid">
+        <div><span class="label">高度:</span> ${moon.alt.toFixed(1)}°</div>
+        <div><span class="label">方位:</span> ${moon.direction} (${moon.az.toFixed(0)}°)</div>
+        <div><span class="label">出:</span> ${formatTime(moon.rise)}</div>
+        <div><span class="label">入:</span> ${formatTime(moon.set)}</div>
+      </div>
     </div>
+    <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0;">
+    <h2>🌟 天体リスト</h2>
   `;
 }
 
@@ -113,32 +111,27 @@ function renderList() {
   const list = document.getElementById("list");
   list.innerHTML = "";
 
-  // ★ 修正ポイント：月(Moon)と太陽(Sun)は専用表示や上部に置くため、
-  // 下の「星の一覧」リストからは除外してスッキリさせます。
-  let planets = allObjects.filter(o => o.type.toLowerCase() === "planet").sort((a,b)=>b.alt-a.alt);
-  let stars   = allObjects.filter(o => o.type.toLowerCase() === "star").sort((a,b)=>b.alt-a.alt);
-  let sun     = allObjects.filter(o => o.type.toLowerCase() === "sun");
-
-  let ordered = [...sun, ...planets, ...stars];
-
-  ordered.forEach(obj => {
-    // フィルター判定（typeの文字種を無視して判定）
-    if (typeFilter !== "all") {
-      if (obj.type.toLowerCase() !== typeFilter.toLowerCase()) return;
-    }
+  allObjects.forEach(obj => {
+    // 月は専用枠があるのでリストからは除外
+    if (obj.name === "moon" || obj.type === "Moon") return;
     
-    let jpName = obj.jpName || obj.name;
+    // フィルター判定
+    if (typeFilter !== "all" && obj.type !== typeFilter) return;
 
     const div = document.createElement("div");
     div.className = "star-item";
+    if (obj.type === "Planet") div.style.borderLeftColor = "#81c784";
+    if (obj.type === "Star") div.style.borderLeftColor = "#64b5f6";
+
     div.innerHTML = `
-      <div class="name">★ ${jpName}</div>
-      <div class="type">${obj.type.toLowerCase() === "star" ? "恒星" : "太陽・惑星"}</div>
-      <div>高度: ${obj.alt.toFixed(1)}°</div>
-      <div>方位角: ${obj.az.toFixed(1)}°（${obj.direction}）</div>
-      <div>等級: ${obj.magnitude !== undefined ? obj.magnitude.toFixed(2) : "-"}</div>
-      <div>出: ${formatTime(obj.rise)}</div>
-      <div>入: ${formatTime(obj.set)}</div>
+      <div class="name">★ ${obj.jpName || obj.name}</div>
+      <div class="type">${obj.type === "Star" ? "恒星" : "太陽・惑星"}</div>
+      <div class="data-grid">
+        <div><span class="label">高度:</span> ${obj.alt.toFixed(1)}°</div>
+        <div><span class="label">方位:</span> ${obj.direction}</div>
+        <div><span class="label">出:</span> ${formatTime(obj.rise)}</div>
+        <div><span class="label">入:</span> ${formatTime(obj.set)}</div>
+      </div>
     `;
     list.appendChild(div);
   });
@@ -147,5 +140,6 @@ function renderList() {
 document.getElementById("typeFilter").addEventListener("change", renderList);
 loadStars();
 </script>
+
 </body>
 </html>
