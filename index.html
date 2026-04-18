@@ -112,20 +112,24 @@ function renderList() {
   list.innerHTML = "";
 
   allObjects.forEach(obj => {
-    // 月は専用枠があるのでリストからは除外
-    if (obj.name === "moon" || obj.type === "Moon") return;
-    
-    // フィルター判定
+    // 月と太陽は専用表示や上部に置くため、リストから除外するか判断（今回はご要望の順番通りに出します）
+    // もし月を一番上に独立させたい場合は、前回のrenderMoonを残してください。
+    // リストの中に順番通り（月・太陽・惑星・恒星）に出したい場合は以下を使います。
+
     if (typeFilter !== "all" && obj.type !== typeFilter) return;
 
     const div = document.createElement("div");
     div.className = "star-item";
-    if (obj.type === "Planet") div.style.borderLeftColor = "#81c784";
-    if (obj.type === "Star") div.style.borderLeftColor = "#64b5f6";
+    
+    // タイプ別に色を変える
+    if (obj.type === "Moon") div.style.borderLeftColor = "#ffeb3b";
+    else if (obj.type === "Sun") div.style.borderLeftColor = "#ff5722";
+    else if (obj.type === "Planet") div.style.borderLeftColor = "#81c784";
+    else div.style.borderLeftColor = "#64b5f6";
 
     div.innerHTML = `
-      <div class="name">★ ${obj.jpName || obj.name}</div>
-      <div class="type">${obj.type === "Star" ? "恒星" : "太陽・惑星"}</div>
+      <div class="name">${obj.type === "Moon" ? "🌙" : obj.type === "Sun" ? "☀️" : "★"} ${obj.jpName || obj.name}</div>
+      <div class="type">${obj.type === "Star" ? "恒星" : obj.type === "Planet" ? "惑星" : obj.type}</div>
       <div class="data-grid">
         <div><span class="label">高度:</span> ${obj.alt.toFixed(1)}°</div>
         <div><span class="label">方位:</span> ${obj.direction}</div>
