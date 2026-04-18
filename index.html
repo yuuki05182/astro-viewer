@@ -49,12 +49,9 @@ const starInfo = {
 
 let allObjects = [];
 
-// 時刻の表示を安全に行う関数
 function formatTime(isoString) {
-  // データが空、またはnullの場合は「沈まない」を返す
   if (!isoString) return "沈まない";
   const d = new Date(isoString);
-  // Dateオブジェクトが不正な場合も「沈まない」を返す
   if (isNaN(d.getTime())) return "沈まない";
   return d.toLocaleTimeString("ja-JP", { hour: '2-digit', minute: '2-digit' });
 }
@@ -63,6 +60,8 @@ async function loadStars() {
   const url = "https://astro-proxy.y-imamine43.workers.dev/astro" + location.search;
   const res = await fetch(url);
   const data = await res.json();
+  
+  // Workerから届くデータを代入
   allObjects = data.objects;
 
   if (data.totalAccess !== undefined) {
@@ -77,20 +76,22 @@ async function loadStars() {
 }
 
 function renderMoon() {
-  // 名前を小文字で検索し、さらに見つからない場合は type が "Moon" のものを探すように強化
-  const moon = allObjects.find(o => o.name.toLowerCase() === "moon" || o.type === "Moon");
+  // ★ 修正ポイント：名前を小文字にして比較し、確実に見つける
+  const moon = allObjects.find(o => 
+    o.name.toLowerCase() === "moon" || 
+    (o.type && o.type.toLowerCase() === "moon")
+  );
+  
   const box = document.getElementById("moonBox");
-
   if (!moon) {
-    box.innerHTML = "月のデータを読み込み中、または取得に失敗しました";
+    box.innerHTML = "<div class='star-item'>月のデータを受信できませんでした</div>";
     return;
   }
 
-  // 高度がマイナスでも、出没時間は知りたいはずなので表示するように変更
   const isVisible = moon.alt >= 0 ? "（地平線上）" : "（地平線下）";
 
   box.innerHTML = `
-    <div class="star-item" style="border-left: 5px solid #ffcc00;">
+    <div class="star-item" style="border-left: 5px solid #ffcc00; background: #fffdf0;">
       <div class="name">🌙 月 ${isVisible}</div>
       <div>高度: ${moon.alt.toFixed(1)}°</div>
       <div>方位角: ${moon.az.toFixed(1)}°（${moon.direction}）</div>
@@ -106,24 +107,27 @@ function renderList() {
   const list = document.getElementById("list");
   list.innerHTML = "";
 
-  let planets = allObjects.filter(o => o.type === "Planet").sort((a,b)=>b.alt-a.alt);
-  let stars   = allObjects.filter(o => o.type === "Star").sort((a,b)=>b.alt-a.alt);
-  let sun     = allObjects.filter(o => o.type === "Sun");
-  let moon    = allObjects.filter(o => o.type === "Moon");
+  // ★ 修正ポイント：月(Moon)と太陽(Sun)は専用表示や上部に置くため、
+  // 下の「星の一覧」リストからは除外してスッキリさせます。
+  let planets = allObjects.filter(o => o.type.toLowerCase() === "planet").sort((a,b)=>b.alt-a.alt);
+  let stars   = allObjects.filter(o => o.type.toLowerCase() === "star").sort((a,b)=>b.alt-a.alt);
+  let sun     = allObjects.filter(o => o.type.toLowerCase() === "sun");
 
-  let ordered = [...sun, ...moon, ...planets, ...stars];
+  let ordered = [...sun, ...planets, ...stars];
 
   ordered.forEach(obj => {
-    if (typeFilter !== "all" && obj.type !== typeFilter) return;
+    // フィルター判定（typeの文字種を無視して判定）
+    if (typeFilter !== "all") {
+      if (obj.type.toLowerCase() !== typeFilter.toLowerCase()) return;
+    }
     
     let jpName = obj.jpName || obj.name;
 
     const div = document.createElement("div");
     div.className = "star-item";
-
     div.innerHTML = `
       <div class="name">★ ${jpName}</div>
-      <div class="type">${obj.type === "Star" ? "恒星" : "太陽・月・惑星"}</div>
+      <div class="type">${obj.type.toLowerCase() === "star" ? "恒星" : "太陽・惑星"}</div>
       <div>高度: ${obj.alt.toFixed(1)}°</div>
       <div>方位角: ${obj.az.toFixed(1)}°（${obj.direction}）</div>
       <div>等級: ${obj.magnitude !== undefined ? obj.magnitude.toFixed(2) : "-"}</div>
@@ -137,6 +141,5 @@ function renderList() {
 document.getElementById("typeFilter").addEventListener("change", renderList);
 loadStars();
 </script>
-
 </body>
 </html>
