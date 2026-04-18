@@ -111,28 +111,52 @@ function renderList() {
   const list = document.getElementById("list");
   list.innerHTML = "";
 
-  allObjects.forEach(obj => {
-    // 月と太陽は専用表示や上部に置くため、リストから除外するか判断（今回はご要望の順番通りに出します）
-    // もし月を一番上に独立させたい場合は、前回のrenderMoonを残してください。
-    // リストの中に順番通り（月・太陽・惑星・恒星）に出したい場合は以下を使います。
+  // --- 1. データをカテゴリー別に分ける ---
+  const moons = allObjects.filter(o => o.type === "Moon");
+  const suns = allObjects.filter(o => o.type === "Sun");
+  
+  // 惑星と恒星は「高度が高い順(desc)」にソート
+  const planets = allObjects
+    .filter(o => o.type === "Planet")
+    .sort((a, b) => b.alt - a.alt);
+    
+  const stars = allObjects
+    .filter(o => o.type === "Star")
+    .sort((a, b) => b.alt - a.alt);
 
+  // --- 2. ご指定の順番（月→太陽→惑星→恒星）に合体させる ---
+  const sortedAll = [...moons, ...suns, ...planets, ...stars];
+
+  // --- 3. 画面に表示する ---
+  sortedAll.forEach(obj => {
+    // フィルターがかかっている場合はスキップ
     if (typeFilter !== "all" && obj.type !== typeFilter) return;
 
     const div = document.createElement("div");
     div.className = "star-item";
     
-    // タイプ別に色を変える
-    if (obj.type === "Moon") div.style.borderLeftColor = "#ffeb3b";
-    else if (obj.type === "Sun") div.style.borderLeftColor = "#ff5722";
-    else if (obj.type === "Planet") div.style.borderLeftColor = "#81c784";
-    else div.style.borderLeftColor = "#64b5f6";
+    // デザインの調整
+    if (obj.type === "Moon") {
+        div.style.borderLeft = "5px solid #ffcc00";
+        div.style.background = "#fffdf0";
+    } else if (obj.type === "Sun") {
+        div.style.borderLeft = "5px solid #ff5722";
+    } else if (obj.type === "Planet") {
+        div.style.borderLeft = "5px solid #81c784";
+    } else {
+        div.style.borderLeft = "5px solid #64b5f6";
+    }
 
     div.innerHTML = `
       <div class="name">${obj.type === "Moon" ? "🌙" : obj.type === "Sun" ? "☀️" : "★"} ${obj.jpName || obj.name}</div>
-      <div class="type">${obj.type === "Star" ? "恒星" : obj.type === "Planet" ? "惑星" : obj.type}</div>
+      <div class="type">${
+        obj.type === "Star" ? "恒星" : 
+        obj.type === "Planet" ? "惑星" : 
+        obj.type === "Sun" ? "太陽" : "月"
+      }</div>
       <div class="data-grid">
         <div><span class="label">高度:</span> ${obj.alt.toFixed(1)}°</div>
-        <div><span class="label">方位:</span> ${obj.direction}</div>
+        <div><span class="label">方位:</span> ${obj.direction} (${obj.az.toFixed(0)}°)</div>
         <div><span class="label">出:</span> ${formatTime(obj.rise)}</div>
         <div><span class="label">入:</span> ${formatTime(obj.set)}</div>
       </div>
@@ -140,7 +164,6 @@ function renderList() {
     list.appendChild(div);
   });
 }
-
 document.getElementById("typeFilter").addEventListener("change", renderList);
 loadStars();
 </script>
