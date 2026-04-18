@@ -47,14 +47,17 @@ const starInfo = {
   regulus: "レグルス", fomalhaut: "フォーマルハウト"
 };
 
-const planetInfo = {
-  Sun: "太陽", Moon: "月", Mercury: "水星", Venus: "金星",
-  Mars: "火星", Jupiter: "木星", Saturn: "土星",
-  Uranus: "天王星", Neptune: "海王星", Pluto: "冥王星",
-  Polaris: "北極星"
-};
-
 let allObjects = [];
+
+// 時刻の表示を安全に行う関数
+function formatTime(isoString) {
+  // データが空、またはnullの場合は「沈まない」を返す
+  if (!isoString) return "沈まない";
+  const d = new Date(isoString);
+  // Dateオブジェクトが不正な場合も「沈まない」を返す
+  if (isNaN(d.getTime())) return "沈まない";
+  return d.toLocaleTimeString("ja-JP", { hour: '2-digit', minute: '2-digit' });
+}
 
 async function loadStars() {
   const url = "https://astro-proxy.y-imamine43.workers.dev/astro" + location.search;
@@ -62,21 +65,16 @@ async function loadStars() {
   const data = await res.json();
   allObjects = data.objects;
 
-  // ★ あなた（?me=1）のときだけ累計アクセス数を表示
-if (data.totalAccess !== undefined) {
-  document.getElementById("accessCount").innerText =
-    `累計アクセス数: ${data.totalAccess}`;
-}
+  if (data.totalAccess !== undefined) {
+    document.getElementById("accessCount").innerText = `累計アクセス数: ${data.totalAccess}`;
+  }
 
-  // ★ 更新時間を表示
   const t = new Date(data.timestamp);
-  document.getElementById("updateTime").innerText =
-    `更新時間: ${t.toLocaleString("ja-JP")}`;
+  document.getElementById("updateTime").innerText = `更新時間: ${t.toLocaleString("ja-JP")}`;
 
   renderMoon();
   renderList();
 }
-
 
 function renderMoon() {
   const moon = allObjects.find(o => o.name === "moon");
@@ -98,66 +96,46 @@ function renderMoon() {
       <div>高度: ${moon.alt.toFixed(1)}°</div>
       <div>方位角: ${moon.az.toFixed(1)}°（${moon.direction}）</div>
       <div>等級: ${moon.magnitude}</div>
-      <div>出: ${moon.rise ? new Date(moon.rise).toLocaleTimeString("ja-JP") : "-"}</div>
-      <div>入: ${moon.set  ? new Date(moon.set ).toLocaleTimeString("ja-JP") : "-"}</div>
+      <div>出: ${formatTime(moon.rise)}</div>
+      <div>入: ${formatTime(moon.set)}</div>
     </div>
   `;
 }
-
 
 function renderList() {
   const typeFilter = document.getElementById("typeFilter").value;
   const list = document.getElementById("list");
   list.innerHTML = "";
 
-let planets = allObjects.filter(o => o.type === "Planet").sort((a,b)=>b.alt-a.alt);
-let stars   = allObjects.filter(o => o.type === "Star").sort((a,b)=>b.alt-a.alt);
-let sun     = allObjects.filter(o => o.type === "Sun");
-let moon    = allObjects.filter(o => o.type === "Moon");
+  let planets = allObjects.filter(o => o.type === "Planet").sort((a,b)=>b.alt-a.alt);
+  let stars   = allObjects.filter(o => o.type === "Star").sort((a,b)=>b.alt-a.alt);
+  let sun     = allObjects.filter(o => o.type === "Sun");
+  let moon    = allObjects.filter(o => o.type === "Moon");
 
-let ordered = [...sun, ...moon, ...planets, ...stars];
+  let ordered = [...sun, ...moon, ...planets, ...stars];
 
-ordered.forEach(obj => {
+  ordered.forEach(obj => {
     if (typeFilter !== "all" && obj.type !== typeFilter) return;
-  
+    
     let jpName = obj.jpName || obj.name;
 
     const div = document.createElement("div");
     div.className = "star-item";
 
     div.innerHTML = `
-  <div class="name">★ ${jpName}</div>
-  <div class="type">${obj.type === "Star" ? "恒星" : "惑星"}</div>
-
-  <div>高度: ${obj.alt.toFixed(1)}°</div>
-  <div>方位角: ${obj.az.toFixed(1)}°（${obj.direction}）</div>
-
-  <div>等級: ${
-    obj.magnitude !== undefined
-      ? obj.magnitude.toFixed(2)
-      : "-"
-  }</div>
-
-  <div>出: ${
-    obj.rise
-      ? new Date(obj.rise).toLocaleTimeString("ja-JP")
-      : "-"
-  }</div>
-
-  <div>入: ${
-    obj.set
-      ? new Date(obj.set).toLocaleTimeString("ja-JP")
-      : "-"
-  }</div>
-`;
-
-
+      <div class="name">★ ${jpName}</div>
+      <div class="type">${obj.type === "Star" ? "恒星" : "太陽・月・惑星"}</div>
+      <div>高度: ${obj.alt.toFixed(1)}°</div>
+      <div>方位角: ${obj.az.toFixed(1)}°（${obj.direction}）</div>
+      <div>等級: ${obj.magnitude !== undefined ? obj.magnitude.toFixed(2) : "-"}</div>
+      <div>出: ${formatTime(obj.rise)}</div>
+      <div>入: ${formatTime(obj.set)}</div>
+    `;
     list.appendChild(div);
   });
 }
 
 document.getElementById("typeFilter").addEventListener("change", renderList);
-
 loadStars();
 </script>
 
