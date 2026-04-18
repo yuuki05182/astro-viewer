@@ -76,26 +76,32 @@ async function loadStars() {
 }
 
 function renderMoon() {
-  // ★ 修正ポイント：名前を小文字にして比較し、確実に見つける
+  // すべての天体名を確認用に出力（デバッグ用）
+  const allNames = allObjects.map(o => o.name).join(", ");
+  
+  // 検索条件を極限まで広げる（nameかjpNameに「月」か「moon」が入っていればOK）
   const moon = allObjects.find(o => 
-    o.name.toLowerCase() === "moon" || 
+    (o.name && o.name.toLowerCase().includes("moon")) || 
+    (o.jpName && o.jpName.includes("月")) ||
     (o.type && o.type.toLowerCase() === "moon")
   );
   
   const box = document.getElementById("moonBox");
+
   if (!moon) {
-    box.innerHTML = "<div class='star-item'>月のデータを受信できませんでした</div>";
+    box.innerHTML = `
+      <div class="star-item" style="color: red;">
+        月のデータが見つかりません。<br>
+        <small>届いている天体リスト: ${allNames}</small>
+      </div>`;
     return;
   }
 
-  const isVisible = moon.alt >= 0 ? "（地平線上）" : "（地平線下）";
-
   box.innerHTML = `
-    <div class="star-item" style="border-left: 5px solid #ffcc00; background: #fffdf0;">
-      <div class="name">🌙 月 ${isVisible}</div>
+    <div class="star-item" style="border-left: 5px solid #ffcc00;">
+      <div class="name">🌙 ${moon.jpName || "月"}</div>
       <div>高度: ${moon.alt.toFixed(1)}°</div>
       <div>方位角: ${moon.az.toFixed(1)}°（${moon.direction}）</div>
-      <div>等級: ${moon.magnitude}</div>
       <div>出: ${formatTime(moon.rise)}</div>
       <div>入: ${formatTime(moon.set)}</div>
     </div>
