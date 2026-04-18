@@ -42,13 +42,11 @@
   </select>
 </div>
 
-<div id="moonBox"></div>
 <div id="list"></div>
 
 <script>
 let allObjects = [];
 
-// 時刻表示の安全な処理
 function formatTime(isoString) {
   if (!isoString) return "沈まない";
   const d = new Date(isoString);
@@ -57,53 +55,26 @@ function formatTime(isoString) {
 }
 
 async function loadStars() {
-  // location.search を引き継ぐことで ?me=1 をWorkerに送る
   const url = "https://astro-proxy.y-imamine43.workers.dev/astro" + location.search;
-  
   try {
     const res = await fetch(url);
     const data = await res.json();
     allObjects = data.objects;
 
-    // --- 管理者用カウンタの表示 ---
     if (data.totalAccess !== undefined) {
       const countBox = document.getElementById("accessCount");
       countBox.innerText = `累計アクセス数: ${data.totalAccess}`;
       countBox.style.display = "block";
     }
 
-    // --- 更新時間 ---
     const t = new Date(data.timestamp);
     document.getElementById("updateTime").innerText = `更新: ${t.toLocaleString("ja-JP")}`;
 
-    renderMoon();
+    // renderMoon() は呼び出さず、renderList() だけを実行
     renderList();
   } catch (e) {
     document.getElementById("list").innerHTML = "<p>データの取得に失敗しました</p>";
   }
-}
-
-function renderMoon() {
-  const moon = allObjects.find(o => o.name === "moon" || o.type === "Moon");
-  const box = document.getElementById("moonBox");
-  if (!moon) return;
-
-  const isVisible = moon.alt >= 0 ? "（地平線上）" : "（地平線下）";
-
-  box.innerHTML = `
-    <h2>🌙 今の月</h2>
-    <div class="star-item" style="border-left-color: #ffcc00; background: #fffde7;">
-      <div class="name">月 ${isVisible}</div>
-      <div class="data-grid">
-        <div><span class="label">高度:</span> ${moon.alt.toFixed(1)}°</div>
-        <div><span class="label">方位:</span> ${moon.direction} (${moon.az.toFixed(0)}°)</div>
-        <div><span class="label">出:</span> ${formatTime(moon.rise)}</div>
-        <div><span class="label">入:</span> ${formatTime(moon.set)}</div>
-      </div>
-    </div>
-    <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0;">
-    <h2>🌟 天体リスト</h2>
-  `;
 }
 
 function renderList() {
@@ -111,11 +82,11 @@ function renderList() {
   const list = document.getElementById("list");
   list.innerHTML = "";
 
-  // --- 1. データをカテゴリー別に分ける ---
+  // 1. データをカテゴリー別に抽出
   const moons = allObjects.filter(o => o.type === "Moon");
   const suns = allObjects.filter(o => o.type === "Sun");
   
-  // 惑星と恒星は「高度が高い順(desc)」にソート
+  // 惑星と恒星をそれぞれ高度順にソート
   const planets = allObjects
     .filter(o => o.type === "Planet")
     .sort((a, b) => b.alt - a.alt);
@@ -124,18 +95,17 @@ function renderList() {
     .filter(o => o.type === "Star")
     .sort((a, b) => b.alt - a.alt);
 
-  // --- 2. ご指定の順番（月→太陽→惑星→恒星）に合体させる ---
+  // 2. 指定の順番（月→太陽→惑星→恒星）に合体
   const sortedAll = [...moons, ...suns, ...planets, ...stars];
 
-  // --- 3. 画面に表示する ---
+  // 3. 表示
   sortedAll.forEach(obj => {
-    // フィルターがかかっている場合はスキップ
     if (typeFilter !== "all" && obj.type !== typeFilter) return;
 
     const div = document.createElement("div");
     div.className = "star-item";
     
-    // デザインの調整
+    // タイプ別デザイン（月は少し目立たせる）
     if (obj.type === "Moon") {
         div.style.borderLeft = "5px solid #ffcc00";
         div.style.background = "#fffdf0";
@@ -164,9 +134,9 @@ function renderList() {
     list.appendChild(div);
   });
 }
+
 document.getElementById("typeFilter").addEventListener("change", renderList);
 loadStars();
 </script>
-
 </body>
 </html>
