@@ -48,9 +48,11 @@
 let allObjects = [];
 
 function formatTime(isoString) {
-  if (!isoString) return "沈まない";
+  if (isoString === "always_up") return "沈まない";
+  if (isoString === "never_up") return "出ない";
+  if (!isoString) return "—";
   const d = new Date(isoString);
-  if (isNaN(d.getTime())) return "沈まない";
+  if (isNaN(d.getTime())) return "—";
   return d.toLocaleTimeString("ja-JP", { hour: '2-digit', minute: '2-digit' });
 }
 
