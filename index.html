@@ -2,30 +2,97 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+
+  <!-- ★これが最重要（スマホ対応） -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>今見える星の一覧</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; background: #f5f5f5; color: #333; }
-    h1 { text-align: center; margin-bottom: 5px; }
-    #updateTime { text-align: center; font-size: 0.9em; color: #666; margin-bottom: 20px; }
-    .controls { margin-bottom: 20px; text-align: center; }
-    select { padding: 8px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; }
-    
-    /* 自分（?me=1）の時だけ出るカウンターのデザイン */
+    body { 
+      font-family: sans-serif; 
+      padding: 12px; 
+      background: #f5f5f5; 
+      color: #333; 
+      font-size: 16px; /* ★全体を少し大きく */
+    }
+
+    h1 { 
+      text-align: center; 
+      margin-bottom: 8px; 
+      font-size: 20px; /* ★小さすぎ防止 */
+    }
+
+    #updateTime { 
+      text-align: center; 
+      font-size: 14px; 
+      color: #666; 
+      margin-bottom: 15px; 
+    }
+
+    .controls { 
+      margin-bottom: 15px; 
+      text-align: center; 
+    }
+
+    select { 
+      padding: 10px; 
+      font-size: 16px; 
+      border-radius: 8px; 
+      width: 100%; /* ★スマホで押しやすく */
+      max-width: 300px;
+    }
+
     #accessCount { 
-      text-align: center; margin: 10px auto; padding: 10px; 
-      background: #e0f7fa; color: #006064; border-radius: 8px; 
-      max-width: 300px; display: none; /* 初期は非表示 */
+      text-align: center; 
+      margin: 10px auto; 
+      padding: 10px; 
+      background: #e0f7fa; 
+      color: #006064; 
+      border-radius: 8px; 
+      max-width: 300px; 
+      display: none; 
     }
 
     .star-item {
-      background: white; padding: 15px; margin-bottom: 12px;
-      border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      background: white; 
+      padding: 14px; 
+      margin-bottom: 10px;
+      border-radius: 10px; 
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
       border-left: 5px solid #ddd;
     }
-    .name { font-size: 20px; font-weight: bold; margin-bottom: 5px; }
-    .type { color: #666; font-size: 14px; margin-bottom: 10px; }
-    .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 15px; }
-    .label { color: #888; font-size: 0.9em; }
+
+    .name { 
+      font-size: 18px; 
+      font-weight: bold; 
+      margin-bottom: 6px; 
+    }
+
+    .type { 
+      color: #666; 
+      font-size: 13px; 
+      margin-bottom: 8px; 
+    }
+
+    .data-grid { 
+      display: grid; 
+      grid-template-columns: 1fr 1fr; 
+      gap: 6px; 
+      font-size: 14px; 
+    }
+
+    .label { 
+      color: #888; 
+      font-size: 12px; 
+    }
+
+    /* ★PCのときだけ少し広げる */
+    @media (min-width: 768px) {
+      body {
+        max-width: 600px;
+        margin: auto;
+      }
+    }
   </style>
 </head>
 <body>
@@ -72,7 +139,6 @@ async function loadStars() {
     const t = new Date(data.timestamp);
     document.getElementById("updateTime").innerText = `更新: ${t.toLocaleString("ja-JP")}`;
 
-    // renderMoon() は呼び出さず、renderList() だけを実行
     renderList();
   } catch (e) {
     document.getElementById("list").innerHTML = "<p>データの取得に失敗しました</p>";
@@ -84,30 +150,25 @@ function renderList() {
   const list = document.getElementById("list");
   list.innerHTML = "";
 
-  // 1. データをカテゴリー別に抽出
   const moons = allObjects.filter(o => o.type === "Moon");
   const suns = allObjects.filter(o => o.type === "Sun");
-  
-  // 惑星と恒星をそれぞれ高度順にソート
+
   const planets = allObjects
     .filter(o => o.type === "Planet")
     .sort((a, b) => b.alt - a.alt);
-    
+
   const stars = allObjects
     .filter(o => o.type === "Star")
     .sort((a, b) => b.alt - a.alt);
 
-  // 2. 指定の順番（月→太陽→惑星→恒星）に合体
   const sortedAll = [...moons, ...suns, ...planets, ...stars];
 
-  // 3. 表示
   sortedAll.forEach(obj => {
     if (typeFilter !== "all" && obj.type !== typeFilter) return;
 
     const div = document.createElement("div");
     div.className = "star-item";
-    
-    // タイプ別デザイン（月は少し目立たせる）
+
     if (obj.type === "Moon") {
         div.style.borderLeft = "5px solid #ffcc00";
         div.style.background = "#fffdf0";
